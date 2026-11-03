@@ -9,7 +9,7 @@ from model_engine import BRAND_CATALOG, load_cars24_dataset, train_cars24_models
 # PAGE CONFIGURATION
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="AutoTorque AI | Cars24 Mechanical Price Predictor",
+    page_title="Car Price Prediction | AI Application",
     page_icon="⚙️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -65,7 +65,7 @@ st.markdown(
 
 .hero-title {
     font-family: 'Orbitron', sans-serif;
-    font-size: 2.15rem;
+    font-size: 2.2rem;
     font-weight: 900;
     letter-spacing: 1.5px;
     background: linear-gradient(90deg, #FFFFFF 0%, #FF5500 55%, #00F2FE 100%);
@@ -203,14 +203,14 @@ st.markdown(
 )
 
 # -----------------------------------------------------------------------------
-# SIDEBAR: ENGINE MODE & KAGGLE FILE OVERRIDE
+# SIDEBAR: YELLOW HEADING UPDATED & BLUE UPLOAD BOX REMOVED
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown(
         """
         <div style="text-align:center; padding: 8px 0;">
             <div class="gear-badge">⚙️</div>
-            <h2 style="font-family:'Orbitron',sans-serif; color:#FF5500; margin:6px 0 0 0; font-size:1.25rem;">AUTOTORQUE ECU</h2>
+            <h2 style="font-family:'Orbitron',sans-serif; color:#FF5500; margin:6px 0 0 0; font-size:1.15rem;">CAR PRICE PREDICTION</h2>
             <p style="font-family:'Rajdhani',sans-serif; color:#94A3B8; font-size:0.9rem;">Cars24 Kaggle Telemetry Engine</p>
         </div>
         """,
@@ -225,14 +225,9 @@ with st.sidebar:
             "Strict 4-Feature Syllabus Mode (R² = 0.47)",
         ],
         index=0,
-        help="Switch between full Cars24 columns (Brand, Car Model, Mileage, Fuel, Age, Drive, Body Type, Owner) and the 4 core features (Brand, Mileage, Fuel, Age).",
+        help="Full Spec uses Brand, Car Model, Mileage, Fuel, Age, Drive, Body Type & Owner. Strict 4-Feature Mode uses ONLY Brand, Mileage, Fuel, and Age.",
     )
     active_mode = "full" if "Full" in feature_mode_label else "core"
-
-    uploaded_csv = st.file_uploader(
-        "Override `cars_24_combined.csv` (Optional)",
-        type=["csv"],
-    )
 
     st.divider()
     st.markdown(
@@ -252,26 +247,26 @@ with st.sidebar:
     )
 
 # -----------------------------------------------------------------------------
-# LOAD DATA & TRAIN MODELS
+# LOAD DATA & TRAIN MODELS (DIRECTLY FROM cars_24_combined.csv)
 # -----------------------------------------------------------------------------
 @st.cache_resource(show_spinner="Calibrating Cars24 Telemetry & Training Regression Engines...")
-def init_cars24_engine(file_buf, mode_key):
-    df_clean = load_cars24_dataset(file_buf)
+def init_cars24_engine(mode_key):
+    df_clean = load_cars24_dataset(None)
     bundle = train_cars24_models(df_clean, mode=mode_key)
     return df_clean, bundle
 
-df, ml_bundle = init_cars24_engine(uploaded_csv, active_mode)
+df, ml_bundle = init_cars24_engine(active_mode)
 lr_metrics = ml_bundle["metrics"]["Linear Regression"]
 rf_metrics = ml_bundle["metrics"]["Random Forest Regressor"]
 
 # -----------------------------------------------------------------------------
-# HERO BANNER
+# HERO BANNER (YELLOW HEADING UPDATED TO CAR PRICE PREDICTION)
 # -----------------------------------------------------------------------------
 st.markdown(
     """
 <div class="hero-glass">
     <div>
-        <div class="hero-title">AUTOTORQUE // CARS24 AI VALUATION</div>
+        <div class="hero-title">CAR PRICE PREDICTION</div>
         <div class="hero-sub">MECHANICAL GLASSMORPHISM REGRESSION ENGINE • 8,014 USED CARS • LINEAR REGRESSION & RANDOM FOREST</div>
     </div>
     <div class="gear-badge">⚙️</div>
@@ -285,7 +280,7 @@ st.markdown(
 # -----------------------------------------------------------------------------
 tab_home, tab_predict, tab_analytics = st.tabs([
     "🏎️ HOME & 16-BRAND SHOWROOM",
-    "🔧 INTERACTIVE ECU PRICE PREDICTOR",
+    "🔧 CAR PRICE PREDICTION",
     "📊 MAE / RMSE MODEL TELEMETRY",
 ])
 
@@ -393,7 +388,6 @@ with tab_home:
         age_grp = b_df.groupby("Age_of_Vehicle", as_index=False).agg(
             Mean_Price=("Price", "mean"),
             Median_Price=("Price", "median"),
-            Count=("Price", "count"),
         )
         fig_dep = go.Figure()
         fig_dep.add_trace(go.Scatter(
@@ -424,49 +418,88 @@ with tab_home:
         st.plotly_chart(fig_dep, use_container_width=True)
 
 # =============================================================================
-# TAB 2: INTERACTIVE MECHANICAL PRICE PREDICTOR
+# TAB 2: CAR PRICE PREDICTION (YELLOW HEADING UPDATED)
 # =============================================================================
 with tab_predict:
-    st.markdown('<div class="section-header">🔧 LIVE ECU RESALE VALUATION CONSOLE</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🔧 CAR PRICE PREDICTION</div>', unsafe_allow_html=True)
 
     c_left, c_right = st.columns([1.15, 1.45])
 
     with c_left:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("⚙️ Vehicle Input Parameters")
+        with st.container(border=True):
+            st.subheader("⚙️ Vehicle Input Parameters")
 
-        brand_options = sorted(df["Brand"].unique().tolist())
-        in_brand = st.selectbox("1️⃣ Brand / Manufacturer", options=brand_options, index=brand_options.index("Maruti") if "Maruti" in brand_options else 0)
+            brand_options = sorted(df["Brand"].unique().tolist())
+            in_brand = st.selectbox(
+                "1️⃣ Brand / Manufacturer",
+                options=brand_options,
+                index=brand_options.index("Maruti") if "Maruti" in brand_options else 0,
+            )
 
-        filtered_Brand_df = df[df["Brand"] == in_brand]
-        model_options = sorted(filtered_Brand_df["Car Name"].unique().tolist())
-        in_model = st.selectbox("2️⃣ Exact Car Model (`Car Name`)", options=model_options, index=0)
+            filtered_brand_df = df[df["Brand"] == in_brand]
+            model_options = sorted(filtered_brand_df["Car Name"].unique().tolist())
 
-        col_a, col_b = st.columns(2)
-        with col_a:
-            fuel_options = sorted(df["Fuel"].unique().tolist())
-            in_fuel = st.selectbox("3️⃣ Engine / Fuel Type", options=fuel_options, index=fuel_options.index("Petrol") if "Petrol" in fuel_options else 0)
-        with col_b:
-            drive_options = sorted(df["Drive"].unique().tolist())
-            in_drive = st.selectbox("4️⃣ Transmission (`Drive`)", options=drive_options, index=0)
+            if active_mode == "full":
+                in_model = st.selectbox("2️⃣ Exact Car Model (`Car Name`)", options=model_options, index=0)
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    fuel_options = sorted(df["Fuel"].unique().tolist())
+                    in_fuel = st.selectbox(
+                        "3️⃣ Engine / Fuel Type",
+                        options=fuel_options,
+                        index=fuel_options.index("Petrol") if "Petrol" in fuel_options else 0,
+                    )
+                with col_b:
+                    drive_options = sorted(df["Drive"].unique().tolist())
+                    in_drive = st.selectbox("4️⃣ Transmission (`Drive`)", options=drive_options, index=0)
 
-        col_c, col_d = st.columns(2)
-        with col_c:
-            type_options = sorted(df["Type"].unique().tolist())
-            default_type = filtered_Brand_df[filtered_Brand_df["Car Name"] == in_model]["Type"].mode().iloc[0]
-            in_type = st.selectbox("5️⃣ Body Style (`Type`)", options=type_options, index=type_options.index(default_type) if default_type in type_options else 0)
-        with col_d:
-            in_owner = st.selectbox("6️⃣ Previous Owners (`Owner`)", options=[1, 2, 3, 4], index=0)
+                col_c, col_d = st.columns(2)
+                with col_c:
+                    type_options = sorted(df["Type"].unique().tolist())
+                    default_type = filtered_brand_df[filtered_brand_df["Car Name"] == in_model]["Type"].mode().iloc[0]
+                    in_type = st.selectbox(
+                        "5️⃣ Body Style (`Type`)",
+                        options=type_options,
+                        index=type_options.index(default_type) if default_type in type_options else 0,
+                    )
+                with col_d:
+                    in_owner = st.selectbox("6️⃣ Previous Owners (`Owner`)", options=[1, 2, 3, 4], index=0)
 
-        in_age = st.slider("7️⃣ Age of Vehicle (Years)", min_value=1, max_value=18, value=7, step=1)
-        in_distance = st.slider("8️⃣ Odometer Mileage (`Distance` in km)", min_value=1000, max_value=200000, value=45000, step=1000)
+                in_age = st.slider("7️⃣ Age of Vehicle (Years)", min_value=1, max_value=18, value=7, step=1)
+                in_distance = st.slider(
+                    "8️⃣ Odometer Mileage (`Distance` in km)",
+                    min_value=1000,
+                    max_value=200000,
+                    value=45000,
+                    step=1000,
+                )
+            else:
+                # Strict 4-Feature Syllabus Mode UI
+                in_model = model_options[0]
+                in_drive = "Manual"
+                in_type = "HatchBack"
+                in_owner = 1
 
-        active_algo = st.radio(
-            "🧠 Select Valuation Algorithm",
-            options=["Random Forest Regressor (Best Accuracy)", "Linear Regression", "Hybrid Ensemble Average"],
-            horizontal=False,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
+                fuel_options = sorted(df["Fuel"].unique().tolist())
+                in_fuel = st.selectbox(
+                    "2️⃣ Engine / Fuel Type",
+                    options=fuel_options,
+                    index=fuel_options.index("Petrol") if "Petrol" in fuel_options else 0,
+                )
+                in_age = st.slider("3️⃣ Age of Vehicle (Years)", min_value=1, max_value=18, value=7, step=1)
+                in_distance = st.slider(
+                    "4️⃣ Odometer Mileage (`Distance` in km)",
+                    min_value=1000,
+                    max_value=200000,
+                    value=45000,
+                    step=1000,
+                )
+
+            active_algo = st.radio(
+                "🧠 Select Valuation Algorithm",
+                options=["Random Forest Regressor (Best Accuracy)", "Linear Regression", "Hybrid Ensemble Average"],
+                horizontal=False,
+            )
 
     # Construct query DataFrame matching active_mode
     query_df = pd.DataFrame({
@@ -497,6 +530,7 @@ with tab_predict:
     fair_low = final_price * 0.93
     fair_high = final_price * 1.07
     logo_url = BRAND_CATALOG.get(in_brand, {"logo": "https://cdn.simpleicons.org/suzuki/FF5500"})["logo"]
+    title_label = f"{in_model.upper()} ({in_fuel.upper()} • {in_drive.upper()})" if active_mode == "full" else f"{in_brand.upper()} ({in_fuel.upper()})"
 
     with c_right:
         max_axis = max(1800000.0, final_price * 1.4)
@@ -506,7 +540,7 @@ with tab_predict:
                 value=final_price,
                 number={"prefix": "₹", "valueformat": ",.0f", "font": {"family": "Orbitron", "size": 36, "color": "#00F2FE"}},
                 delta={"reference": pred_lr, "increasing": {"color": "#00F2FE"}, "decreasing": {"color": "#FF5500"}},
-                title={"text": f"<b>{in_model.upper()} ({in_fuel.upper()} • {in_drive.upper()})</b><br><span style='font-size:0.85em;color:#94A3B8'>{algo_tag}</span>", "font": {"family": "Rajdhani", "size": 20, "color": "#F8FAFC"}},
+                title={"text": f"<b>{title_label}</b><br><span style='font-size:0.85em;color:#94A3B8'>{algo_tag}</span>", "font": {"family": "Rajdhani", "size": 20, "color": "#F8FAFC"}},
                 gauge={
                     "axis": {"range": [0, max_axis], "tickcolor": "#94A3B8"},
                     "bar": {"color": "#FF5500", "thickness": 0.35},
@@ -563,7 +597,7 @@ with tab_predict:
 
         # Show Real Comparable Cars from cars_24_combined.csv
         st.markdown('<div class="metric-title" style="margin-top:8px;">📋 CLOSEST REAL LISTINGS IN CARS_24_COMBINED.CSV</div>', unsafe_allow_html=True)
-        comps = df[df["Car Name"] == in_model].copy()
+        comps = df[df["Car Name"] == in_model].copy() if active_mode == "full" else df[df["Brand"] == in_brand].copy()
         if comps.empty:
             comps = df[df["Brand"] == in_brand].copy()
         comps["Age_Diff"] = (comps["Age_of_Vehicle"] - in_age).abs()
